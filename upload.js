@@ -65,7 +65,7 @@ async function main() {
     });
 
     console.log(auth)
-    const filePath = '/home/buruhsd/Downloads/Laporan_HTML_Injection_Sribu.pdf';
+    const filePath = '/home/buruhsd/Downloads/Laporan.pdf';
     const folderId = '1PQA47ejS5qmqVAqXjIUfDF6WxyAE6BEe';
 
     await uploadFileToDrive(auth, filePath, folderId);
