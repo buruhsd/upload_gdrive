@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Contoh Mengunggah File ke Google Drive</title>
+</head>
+<body>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+        // Fungsi untuk mengunggah file ke Google Drive
+        function uploadFileToDrive(auth, filePath, folderId) {
+            const drive = gapi.client.drive;
+            const fileInfo = getFileInfo(filePath);
+
+            const fileMetadata = {
+                name: fileInfo.name,
+                parents: [folderId],
+            };
+
+            const media = {
+                mimeType: fileInfo.mimeType,
+                body: new Blob([filePath], { type: fileInfo.mimeType }),
+            };
+
+            drive.files.create({
+                resource: fileMetadata,
+                media: media,
+                fields: 'id',
+            }).then(function(response) {
+                console.log('File ID:', response.result.id);
+                alert('File berhasil diunggah ke Google Drive dengan ID: ' + response.result.id);
+            }).catch(function(error) {
+                console.error('Error uploading file:', error);
+                alert('Terjadi kesalahan saat mengunggah file.');
+            });
+        }
+
+        // Fungsi untuk mendapatkan informasi file
+        function getFileInfo(filePath) {
+            const fileInfo = {
+                name: filePath.name, // Mengambil nama file dari objek file
+                mimeType: filePath.type, // Mengambil tipe MIME file dari objek file
+            };
+
+            return fileInfo;
+        }
+
+        function authenticate() {
+            return gapi.auth2.getAuthInstance()
+                .signIn({ scope: "https://www.googleapis.com/auth/drive" })
+                .then(function () { console.log("Sign-in successful"); },
+                    function (err) { console.error("Error signing in", err); });
+        }
+
+        function loadClient() {
+            gapi.client.setApiKey("AIzaSyAzxGCEIbHN3mQF2HNlPLpe8bqKv_Zgi0c");
+            return gapi.client.load("https://www.googleapis.com/discovery/v1/apis/drive/v3/rest")
+                .then(function () { console.log("GAPI client loaded for API"); },
+                    function (err) { console.error("Error loading GAPI client for API", err); });
+        }
+
+        function handleFileUpload() {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.addEventListener('change', function () {
+                const file = fileInput.files[0];
+                const folderId = '1PQA47ejS5qmqVAqXjIUfDF6WxyAE6BEe'; // Ganti dengan ID folder tujuan di Google Drive
+                authenticate().then(function() {
+                    loadClient().then(function() {
+                        uploadFileToDrive(gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token, file, folderId);
+                    });
+                });
+            });
+            fileInput.click();
+        }
+
+        gapi.load("client:auth2", function () {
+            gapi.auth2.init({ client_id: "535811529822-pakvol198bf92sn5tj2tio1lg23iotj3.apps.googleusercontent.com" });
+        });
+    </script>
+    <button onclick="handleFileUpload()">Upload File to Google Drive</button>
+</body>
+</html>

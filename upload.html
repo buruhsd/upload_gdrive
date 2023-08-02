@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Drive API Quickstart</title>
+    <meta charset="utf-8" />
+  </head>
+  <body>
+    <p>Drive API Quickstart</p>
+
+    <!--Add buttons to initiate auth sequence and sign out-->
+    <input type="file" id="fileInput">
+    <button onclick="handleFileUpload()">Unggah ke Google Drive</button>
+
+
+    <pre id="content" style="white-space: pre-wrap;"></pre>
+
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+        function handleFileUpload() {
+            var fileInput = document.getElementById('fileInput');
+            var file = fileInput.files[0];
+            uploadFileToDrive(file, function(response) {
+                console.log('File berhasil diunggah:', response);
+                // Lakukan sesuatu setelah file berhasil diunggah
+            });
+        }
+        // Inisialisasi Google Drive API dengan kredensial
+        function initClient() {
+          gapi.client.init({
+            apiKey: 'AIzaSyDWomY-uT8d4uwu3LCDBMoocjRqwBrApbU',
+            clientId: '396639957481-e7k22cruu8f9jrlk0e58mmemtchnqng2.apps.googleusercontent.com',
+            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
+            scope: 'https://www.googleapis.com/auth/drive.file'
+          }).then(function() {
+            console.log('Google Drive API telah diinisialisasi');
+          }, function(error) {
+            console.error('Error saat menginisialisasi Google Drive API:', error);
+          });
+        }
+
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: '396639957481-e7k22cruu8f9jrlk0e58mmemtchnqng2.apps.googleusercontent.com',
+            scope: 'https://www.googleapis.com/auth/drive.file',
+            callback: '', // defined later
+            });
+            gisInited = true;
+            maybeEnableButtons();
+        }
+      
+        // Panggil fungsi ini untuk memuat Google Drive API dan menginisialisasi klien
+        function handleClientLoad() {
+          gapi.load('client', initClient);
+        }
+      
+        // Fungsi untuk mengunggah file ke Google Drive
+        function uploadFileToDrive(file, callback) {
+          var metadata = {
+            name: file.name,
+            mimeType: file.type
+          };
+      
+          var uploader = new MediaUploader({
+            file: file,
+            token: gapi.auth.getToken().access_token,
+            metadata: metadata,
+            onComplete: callback
+          });
+      
+          uploader.upload();
+        }
+      
+        // MediaUploader untuk mengunggah file
+        function MediaUploader(opts) {
+          var self = this;
+          var reader = new FileReader();
+          reader.readAsBinaryString(opts.file);
+          reader.onload = function(e) {
+            self.multipartRequestBody = btoa(reader.result);
+            self.uploadFile(opts);
+          };
+        }
+      
+        MediaUploader.prototype.uploadFile = function(opts) {
+          var boundary = '-------314159265358979323846';
+          var delimiter = "\r\n--" + boundary + "\r\n";
+          var close_delim = "\r\n--" + boundary + "--";
+      
+          var contentType = opts.file.type || 'application/octet-stream';
+          var metadata = {
+            name: opts.file.name,
+            mimeType: contentType
+          };
+      
+          var base64Data = opts.metadata ? btoa(JSON.stringify(opts.metadata)) : '';
+      
+          var multipartRequestBody =
+            delimiter +
+            'Content-Type: application/json\r\n\r\n' +
+            JSON.stringify(metadata) +
+            delimiter +
+            'Content-Type: ' + contentType + '\r\n' +
+            'Content-Transfer-Encoding: base64\r\n' +
+            '\r\n' +
+            (opts.file.type.indexOf('image') === 0 ? base64Data : opts.multipartRequestBody) +
+            close_delim;
+      
+          var request = gapi.client.request({
+            'path': '/upload/drive/v3/files',
+            'method': 'POST',
+            'params': {
+              'uploadType': 'multipart'
+            },
+            'headers': {
+              'Content-Type': 'multipart/related; boundary="' + boundary + '"'
+            },
+            'body': multipartRequestBody
+          });
+      
+          if (!opts.doNotExecute) {
+            request.execute(opts.onComplete || function() {});
+          }
+        }
+      </script>
+      
+      <!-- Panggil fungsi untuk memuat Google Drive API dan menginisialisasi klien -->
+      <script async defer src="https://apis.google.com/js/api.js" onload="handleClientLoad()"></script>
+    <script async defer src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
+  </body>
+</html>
